@@ -89,11 +89,17 @@ La pestaña Red del navegador muestra la cabecera `Authorization` de tus propias
 
 Ruta soportada: rama `main`, carpeta `/` (raíz).
 
-URL: https://lbbernardo.github.io/gastos-app/
+URL prevista: https://lbbernardo.github.io/gastos-app/
 
-Pages solo entrega el HTML y el JS. Los datos siguen saliendo de la Contents API y hace falta el token de cada persona. El JSON público se puede leer igual sin abrir la app.
+**Pages no está publicado.** `POST /repos/Lbbernardo/gastos-app/pages` respondió **HTTP 403** `Resource not accessible by integration`. GitHub pide permiso `pages=write` y `administration=write`. Un `GET` del sitio responde **404**. Esta publicación no cambia colaboradores ni permisos y no puede activar Pages con el acceso disponible.
 
-Si esa URL no responde, Pages no está activo. Activarlo exige permiso de administración: Settings → Pages → Deploy from a branch → Branch `main` → Folder `/ (root)`.
+Para encenderlo hace falta un administrador del repo:
+
+1. Settings → Pages.
+2. Build and deployment → Deploy from a branch.
+3. Branch `main`, folder `/ (root)`, Save.
+
+Cuando responda, Pages solo entrega el HTML y el JS. Los datos siguen en la Contents API y cada persona usa su propio token. El JSON del repositorio público se puede leer igual sin abrir la app.
 
 ## Abrir como archivo local (`file://`)
 
