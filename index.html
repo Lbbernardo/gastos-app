@@ -150,6 +150,7 @@
       color: #fecaca;
       font-size: .88rem;
     }
+    .form-error.ok { color: #a7f3d0; }
     .kpi {
       text-align: center;
       padding: .85rem;
@@ -278,7 +279,8 @@
           <label for="gasto-desc">Descripción</label>
           <input id="gasto-desc" name="descripcion" maxlength="200" required placeholder="Ej. Hosting Visibleen" />
           <label for="gasto-monto">Monto (USD)</label>
-          <input id="gasto-monto" name="monto" inputmode="decimal" placeholder="0.00" required />
+          <input id="gasto-monto" name="monto" inputmode="decimal" placeholder="12,50" required />
+          <p class="hint">Ejemplos: 12,50 o 1.500,00. El total cambia solo cuando GitHub confirma el guardado.</p>
           <div id="form-gasto-error" class="form-error" hidden></div>
           <div class="actions">
             <button type="submit" class="btn btn-primary">Agregar gasto</button>
@@ -303,7 +305,7 @@
               <input id="pago-monto" name="monto" inputmode="decimal" placeholder="0.00" required />
             </div>
           </div>
-          <p class="hint">Se permiten pagos parciales. No se puede superar el restante del gasto.</p>
+          <p class="hint">Ejemplos: 12,50 o 1.500,00. Se permiten pagos parciales y no se puede superar el restante. El total cambia solo si GitHub confirma el guardado.</p>
           <div id="form-pago-error" class="form-error" hidden></div>
           <div class="actions">
             <button type="submit" class="btn btn-ok">Registrar pago</button>

@@ -22,7 +22,8 @@ No hay cifrado ni control real de roles. No anotes secretos, contraseñas ni tok
 - **Jefe** registra pagos: fecha, monto y **referencia obligatoria** al gasto que cubre.
 - Los pagos parciales están permitidos. El estado de cada gasto es **pendiente**, **parcial** o **pagado**.
 - Totales: gastos, pagos y saldo pendiente.
-- Los montos se guardan en **centavos enteros**.
+- Los montos se guardan en **centavos enteros**. En el formulario valen `12,50`, `12.50`, `1.500` y `1.500,00`.
+- El total de la pantalla cambia solo después de un guardado real en GitHub. Si falta el token, no cargaste los datos o el monto no se entiende, el aviso queda junto al botón y dice que no se guardó nada.
 - Antes de cada cambio la app **vuelve a leer** el archivo y su `sha`. Si otra persona guardó antes (conflicto 409, o 422 porque el `sha` no coincide), **no sobrescribe y no reintenta sola**. Hay que recargar y repetir el cambio.
 - Si `gastos.json` no existe pero el repositorio es accesible, se **crea** en el primer guardado.
 - Un 404 al verificar el **repositorio** significa «no existe o este token no tiene acceso». GitHub no distingue esos dos casos.
@@ -87,19 +88,11 @@ La pestaña Red del navegador muestra la cabecera `Authorization` de tus propias
 
 ## GitHub Pages
 
-Ruta soportada: rama `main`, carpeta `/` (raíz).
+Ruta: rama `main`, carpeta `/` (raíz).
 
-URL prevista: https://lbbernardo.github.io/gastos-app/
+URL: https://lbbernardo.github.io/gastos-app/
 
-**Pages no está publicado.** `POST /repos/Lbbernardo/gastos-app/pages` respondió **HTTP 403** `Resource not accessible by integration`. GitHub pide permiso `pages=write` y `administration=write`. Un `GET` del sitio responde **404**. Esta publicación no cambia colaboradores ni permisos y no puede activar Pages con el acceso disponible.
-
-Para encenderlo hace falta un administrador del repo:
-
-1. Settings → Pages.
-2. Build and deployment → Deploy from a branch.
-3. Branch `main`, folder `/ (root)`, Save.
-
-Cuando responda, Pages solo entrega el HTML y el JS. Los datos siguen en la Contents API y cada persona usa su propio token. El JSON del repositorio público se puede leer igual sin abrir la app.
+Pages solo entrega el HTML y el JS. Los datos siguen en la Contents API y cada persona usa su propio token. El JSON del repositorio público se puede leer igual sin abrir la app.
 
 ## Abrir como archivo local (`file://`)
 

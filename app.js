@@ -44,14 +44,12 @@
         throw new Error("Usa un monto positivo con hasta 2 decimales (ej. 12.50).");
       }
     } else if (typeof input === "string") {
-      s = input.trim().replace(/\s+/g, "");
-      if (s.charAt(0) === "$") s = s.slice(1);
-      if (s.indexOf(",") >= 0 && s.indexOf(".") === -1) s = s.replace(",", ".");
+      s = normalizeAmountString(input);
     } else {
       throw new Error("Monto inválido.");
     }
     if (!/^\d+(\.\d{1,2})?$/.test(s)) {
-      throw new Error("Usa un monto positivo con hasta 2 decimales (ej. 12.50).");
+      throw new Error("Usa un monto como 12,50 o 1.500,00.");
     }
     var parts = s.split(".");
     var dollarStr = parts[0].replace(/^0+(?=\d)/, "");
@@ -68,6 +66,37 @@
       );
     }
     return total;
+  }
+
+  function normalizeAmountString(raw) {
+    var s = String(raw == null ? "" : raw).trim().replace(/\s+/g, "");
+    if (s.charAt(0) === "$") s = s.slice(1);
+    if (!s) throw new Error("Usa un monto como 12,50 o 1.500,00.");
+    var hasComma = s.indexOf(",") >= 0;
+    var hasDot = s.indexOf(".") >= 0;
+    if (hasComma && hasDot) {
+      if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+        if (!/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(s)) {
+          throw new Error("Usa un monto como 12,50 o 1.500,00.");
+        }
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else {
+        if (!/^\d{1,3}(,\d{3})+\.\d{1,2}$/.test(s)) {
+          throw new Error("Usa un monto como 12,50 o 1.500,00.");
+        }
+        s = s.replace(/,/g, "");
+      }
+    } else if (hasComma) {
+      if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, "");
+      else if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(",", ".");
+      else throw new Error("Usa un monto como 12,50 o 1.500,00.");
+    } else if (hasDot) {
+      if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+      else if (!/^\d+\.\d{1,2}$/.test(s)) throw new Error("Usa un monto como 12,50 o 1.500,00.");
+    } else if (!/^\d+$/.test(s)) {
+      throw new Error("Usa un monto como 12,50 o 1.500,00.");
+    }
+    return s;
   }
 
   function parseDollarsToCents(str) {
@@ -888,11 +917,30 @@
       box.hidden = !msg;
     }
 
-    function setFormError(formId, msg) {
+    function reveal(node) {
+      if (!node || node.hidden) return;
+      try {
+        node.scrollIntoView({ block: "nearest", inline: "nearest" });
+      } catch (e) {
+        /* el navegador igual muestra el texto */
+      }
+    }
+
+    function setFormError(formId, msg, kind) {
       var box = $(formId + "-error");
       if (!box) return;
       text(box, redactSecrets(msg || ""));
       box.hidden = !msg;
+      box.className = "form-error" + (kind === "ok" ? " ok" : "");
+      if (msg) reveal(box);
+    }
+
+    function failForm(formId, message) {
+      var msg = redactSecrets(message || "No se pudo guardar.");
+      if (msg.indexOf("No se guardó") !== 0) msg = "No se guardó nada en GitHub. " + msg;
+      setStatus(msg, "error");
+      if (formId) setFormError(formId, msg, "error");
+      else reveal($("status-msg"));
     }
 
     function readTokenFromInput() {
@@ -1098,6 +1146,7 @@
       }
       if (!token) {
         setStatus("Ingresa un token fine-grained con acceso Contents al repo.", "error");
+        reveal($("status-msg"));
         return;
       }
       setStatus("Cargando datos remotos…", "info");
@@ -1112,11 +1161,15 @@
         setStatus(
           result.missing
             ? "Repo OK. gastos.json aún no existe; se creará al primer guardado."
-            : "Datos cargados. SHA listo para mutaciones.",
+            : "Datos cargados. Total gastos: " +
+                formatUSD(resumen(result.data).totalGastos) +
+                ".",
           "ok"
         );
+        reveal($("total-gastos"));
       } catch (e) {
         setStatus(e.message || "No se pudieron cargar los datos.", "error");
+        reveal($("status-msg"));
       }
     });
 
@@ -1127,19 +1180,22 @@
         assertCfg(state.cfg);
         token = readTokenFromInput();
       } catch (e) {
-        setStatus(e.message || "Configuración o token inválido.", "error");
-        if (formErrorId) setFormError(formErrorId, e.message || "Configuración o token inválido.");
+        failForm(formErrorId, e.message || "Configuración o token inválido.");
         throw e;
       }
       if (!token) {
-        var errTok = new Error("Ingresa un token para guardar en GitHub.");
-        setStatus(errTok.message, "error");
-        throw errTok;
+        failForm(
+          formErrorId,
+          "Falta el token. Pégalo arriba, pulsa «Cargar datos remotos» y vuelve a intentar."
+        );
+        throw new Error("Sin token");
       }
       if (!state.loaded) {
-        var errLoad = new Error("Primero carga los datos remotos.");
-        setStatus(errLoad.message, "error");
-        throw errLoad;
+        failForm(
+          formErrorId,
+          "Antes hay que pulsar «Cargar datos remotos». Este movimiento no entró al total."
+        );
+        throw new Error("No cargado");
       }
       setStatus("Guardando en GitHub…", "info");
       try {
@@ -1149,12 +1205,19 @@
         state.missing = false;
         state.token = token;
         refreshAll();
-        setStatus(result.skipped ? "Sin cambios que guardar." : "Guardado correctamente.", "ok");
-        if (formErrorId) setFormError(formErrorId, "");
+        var totals = resumen(result.data);
+        var okMsg = result.skipped
+          ? "Sin cambios nuevos. No se escribió en GitHub."
+          : "Guardado en GitHub. Total gastos: " +
+            formatUSD(totals.totalGastos) +
+            ". Saldo pendiente: " +
+            formatUSD(totals.saldoPendiente) +
+            ".";
+        setStatus(okMsg, result.skipped ? "info" : "ok");
+        if (formErrorId) setFormError(formErrorId, okMsg, result.skipped ? "info" : "ok");
       } catch (e) {
-        var msg = redactSecrets(e.message || "No se pudo guardar.");
-        setStatus(msg, "error");
-        if (formErrorId) setFormError(formErrorId, msg);
+        if (e && (e.message === "Sin token" || e.message === "No cargado")) throw e;
+        failForm(formErrorId, e.message || "No se pudo guardar.");
         throw e;
       }
     }
@@ -1223,8 +1286,7 @@
       try {
         addGasto(emptyData(), fields);
       } catch (localErr) {
-        setFormError("form-gasto", localErr.message);
-        setStatus(localErr.message, "error");
+        failForm("form-gasto", localErr.message);
         return;
       }
       withBusy(async function () {
@@ -1253,14 +1315,16 @@
         gastoId: $("pago-gasto").value,
       };
       if (!state.loaded) {
-        setStatus("Primero carga los datos remotos.", "error");
+        failForm(
+          "form-pago",
+          "Antes hay que pulsar «Cargar datos remotos». Este pago no entró al total."
+        );
         return;
       }
       try {
         addPago(state.data, fields);
       } catch (localErr) {
-        setFormError("form-pago", localErr.message);
-        setStatus(localErr.message, "error");
+        failForm("form-pago", localErr.message);
         return;
       }
       withBusy(async function () {
