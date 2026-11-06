@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'"
+  />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3C/svg%3E" />
+  <title>Gastos operativos — Luis / Jefe</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --panel2: #232d3a;
+      --border: #334155;
+      --text: #e8eef6;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --ok: #34d399;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 10% -10%, #1e3a5f 0%, transparent 50%),
+                  radial-gradient(900px 500px at 100% 0%, #14532d33 0%, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    body.busy { cursor: progress; }
+    body.busy button, body.busy input, body.busy select { pointer-events: none; opacity: .85; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    header h1 { margin: 0 0 .35rem; font-size: 1.55rem; letter-spacing: -.02em; }
+    header p { margin: 0; color: var(--muted); font-size: .95rem; }
+    .banner {
+      margin: 1rem 0;
+      padding: .85rem 1rem;
+      background: #422006;
+      border: 1px solid #a16207;
+      border-radius: var(--radius);
+      color: #fde68a;
+      font-size: .92rem;
+    }
+    .banner strong { color: #fff; }
+    .grid { display: grid; gap: 1rem; }
+    @media (min-width: 860px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      margin: 0 0 .75rem;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .pill {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: .2rem .45rem;
+      border-radius: 999px;
+      background: var(--panel2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .pill.jefe { color: var(--accent2); }
+    label {
+      display: block;
+      font-size: .82rem;
+      color: var(--muted);
+      margin: .55rem 0 .25rem;
+    }
+    input, select, button, textarea {
+      font: inherit;
+      color: var(--text);
+    }
+    input, select {
+      width: 100%;
+      padding: .55rem .65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+    }
+    input:focus, select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .row { display: grid; gap: .75rem; }
+    @media (min-width: 560px) {
+      .row-2 { grid-template-columns: 1fr 1fr; }
+      .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      padding: .5rem .85rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      border-color: #1d4ed8;
+      font-weight: 600;
+    }
+    .btn-ok {
+      background: linear-gradient(135deg, #059669, #047857);
+      border-color: #065f46;
+      font-weight: 600;
+    }
+    .btn-danger {
+      background: #7f1d1d;
+      border-color: #991b1b;
+    }
+    .btn-sm { padding: .25rem .5rem; font-size: .8rem; }
+    .status {
+      margin: .75rem 0;
+      padding: .7rem .9rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      font-size: .92rem;
+    }
+    .status.ok { border-color: #065f46; background: #052e1a; color: #a7f3d0; }
+    .status.error { border-color: #991b1b; background: #450a0a; color: #fecaca; }
+    .status.info { border-color: #1e3a8a; background: #0f172a; color: #bfdbfe; }
+    .form-error {
+      margin-top: .5rem;
+      color: #fecaca;
+      font-size: .88rem;
+    }
+    .kpi {
+      text-align: center;
+      padding: .85rem;
+      background: var(--panel2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .kpi .label { color: var(--muted); font-size: .8rem; }
+    .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: .25rem; }
+    .table-wrap { overflow-x: auto; margin-top: .5rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: .55rem .45rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.empty { text-align: center; color: var(--muted); padding: 1.2rem; }
+    .badge {
+      display: inline-block;
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .badge-pendiente { background: #78350f; color: #fde68a; }
+    .badge-parcial { background: #1e3a8a; color: #bfdbfe; }
+    .badge-pagado { background: #065f46; color: #a7f3d0; }
+    .hint { color: var(--muted); font-size: .82rem; margin: .35rem 0 0; }
+    .filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-bottom: .5rem; }
+    .filters > div { min-width: 140px; flex: 1; }
+    footer {
+      margin-top: 1.5rem;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+    code { background: #0b1220; padding: .1rem .35rem; border-radius: 4px; font-size: .85em; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Gastos operativos</h1>
+      <p>Luis registra gastos · el jefe registra pagos · saldo compartido vía <code>gastos.json</code> en GitHub.</p>
+    </header>
+
+    <div class="banner" role="note">
+      <strong>Datos públicos y roles:</strong>
+      Este repositorio es público a propósito: cualquiera puede leer <code>gastos.json</code> y el historial de git (montos, descripciones y borrados). No guardes secretos aquí.
+      Los gastos y pagos viven solo en ese archivo remoto (GitHub Contents API).
+      Las etiquetas «Luis» y «Jefe» son solo flujo de trabajo: <strong>no hay autenticación ni control real de roles</strong>.
+      Quien tenga un token con permiso Contents puede leer y escribir los mismos datos.
+      No hay sincronización mágica multiusuario más allá de leer/escribir ese archivo; ante conflictos hay que recargar.
+      Guardar el token en este navegador es opcional y arriesgado (XSS / equipo compartido). El token no va al repositorio, a la URL ni a los datos.
+    </div>
+
+    <div id="status-msg" class="status info" role="status" aria-live="polite" hidden></div>
+
+    <section class="card" aria-labelledby="cfg-title">
+      <h2 id="cfg-title">Conexión a GitHub</h2>
+      <p class="hint">
+        Defaults: <code>Lbbernardo/gastos-app</code>, archivo <code>gastos.json</code>, rama <code>main</code>.
+        Cada persona usa su propio token. El token <strong>nunca</strong> va en el código, la URL, los logs ni en el JSON de datos.
+      </p>
+      <div class="row row-2">
+        <div>
+          <label for="cfg-owner">Owner (usuario/org)</label>
+          <input id="cfg-owner" name="owner" autocomplete="off" spellcheck="false" />
+        </div>
+        <div>
+          <label for="cfg-repo">Repositorio</label>
+          <input id="cfg-repo" name="repo" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="row row-2">
+        <div>
+          <label for="cfg-path">Ruta del archivo de datos</label>
+          <input id="cfg-path" name="path" autocomplete="off" spellcheck="false" />
+        </div>
+        <div>
+          <label for="cfg-branch">Rama</label>
+          <input id="cfg-branch" name="branch" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+      <div>
+        <label for="cfg-token">Token fine-grained (Contents: Read and write, solo este repo)</label>
+        <input id="cfg-token" name="token" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" maxlength="500" />
+        <p id="token-saved-hint" class="hint" hidden>Hay un token guardado en localStorage de este navegador.</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btn-cargar">Cargar datos remotos</button>
+        <button type="button" class="btn" id="btn-guardar-config">Guardar configuración (sin token)</button>
+        <button type="button" class="btn btn-ok" id="btn-guardar-token">Guardar token en este navegador</button>
+        <button type="button" class="btn btn-danger" id="btn-olvidar-token">Olvidar token</button>
+      </div>
+    </section>
+
+    <section class="grid grid-3" style="margin-top:1rem" aria-label="Resumen">
+      <div class="kpi"><div class="label">Total gastos</div><div class="value" id="total-gastos">$0.00</div></div>
+      <div class="kpi"><div class="label">Total pagos</div><div class="value" id="total-pagos">$0.00</div></div>
+      <div class="kpi"><div class="label">Saldo pendiente</div><div class="value" id="saldo-pendiente">$0.00</div></div>
+    </section>
+
+    <div class="grid grid-2" style="margin-top:1rem">
+      <section class="card" aria-labelledby="luis-title">
+        <h2 id="luis-title"><span class="pill">Luis</span> Nuevo gasto operativo</h2>
+        <form id="form-gasto" novalidate>
+          <div class="row row-2">
+            <div>
+              <label for="gasto-fecha">Fecha</label>
+              <input id="gasto-fecha" name="fecha" type="date" required />
+            </div>
+            <div>
+              <label for="gasto-cat">Categoría</label>
+              <select id="gasto-cat" name="categoria" required>
+                <option value="">— Elige —</option>
+              </select>
+            </div>
+          </div>
+          <label for="gasto-desc">Descripción</label>
+          <input id="gasto-desc" name="descripcion" maxlength="200" required placeholder="Ej. Hosting Visibleen" />
+          <label for="gasto-monto">Monto (USD)</label>
+          <input id="gasto-monto" name="monto" inputmode="decimal" placeholder="0.00" required />
+          <div id="form-gasto-error" class="form-error" hidden></div>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary">Agregar gasto</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="jefe-title">
+        <h2 id="jefe-title"><span class="pill jefe">Jefe</span> Registrar pago</h2>
+        <form id="form-pago" novalidate>
+          <label for="pago-gasto">Gasto que cubre (obligatorio)</label>
+          <select id="pago-gasto" name="gastoId" required>
+            <option value="">— Selecciona un gasto —</option>
+          </select>
+          <div class="row row-2">
+            <div>
+              <label for="pago-fecha">Fecha</label>
+              <input id="pago-fecha" name="fecha" type="date" required />
+            </div>
+            <div>
+              <label for="pago-monto">Monto (USD)</label>
+              <input id="pago-monto" name="monto" inputmode="decimal" placeholder="0.00" required />
+            </div>
+          </div>
+          <p class="hint">Se permiten pagos parciales. No se puede superar el restante del gasto.</p>
+          <div id="form-pago-error" class="form-error" hidden></div>
+          <div class="actions">
+            <button type="submit" class="btn btn-ok">Registrar pago</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:1rem" aria-labelledby="lista-gastos-title">
+      <h2 id="lista-gastos-title">Lista de gastos</h2>
+      <div class="filters">
+        <div>
+          <label for="filtro-estado">Estado</label>
+          <select id="filtro-estado">
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="parcial">Parcial</option>
+            <option value="pagado">Pagado</option>
+          </select>
+        </div>
+        <div>
+          <label for="filtro-categoria">Categoría</label>
+          <select id="filtro-categoria">
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Categoría</th>
+              <th>Descripción</th>
+              <th class="num">Monto</th>
+              <th class="num">Pagado</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="gastos-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:1rem" aria-labelledby="lista-pagos-title">
+      <h2 id="lista-pagos-title">Lista de pagos</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th class="num">Monto</th>
+              <th>Referencia al gasto</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pagos-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      Datos iniciales vacíos y públicos en <code>gastos.json</code>. Ver <code>README.md</code> para el token de cada persona.
+      Abrir <code>index.html</code> como archivo local puede fallar por origen <code>file://</code>; preferir Pages o un servidor local estático.
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
